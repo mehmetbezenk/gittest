@@ -1,0 +1,64 @@
+name: iPhone uygulamasını derle (.ipa)
+
+on:
+  push:
+    branches: [main, gunun-kelimesi]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: XcodeGen kur
+        run: brew install xcodegen
+
+      - name: Xcode projesini oluştur
+        run: xcodegen generate
+
+      - name: Xcode sürümü
+        run: xcodebuild -version
+
+      - name: Derle (imzasız, iPhone için)
+        run: |
+          xcodebuild \
+            -project GununKelimesi.xcodeproj \
+            -scheme GununKelimesi \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            -quiet \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build
+
+      - name: .ipa paketle
+        run: |
+          APP="build/Build/Products/Release-iphoneos/GununKelimesi.app"
+          test -d "$APP/PlugIns/GununKelimesiWidget.appex"
+          mkdir -p Payload
+          cp -R "$APP" Payload/
+          zip -qry GununKelimesi.ipa Payload
+          ls -la GununKelimesi.ipa
+
+      - name: .ipa dosyasını yükle
+        uses: actions/upload-artifact@v4
+        with:
+          name: GununKelimesi-ipa
+          path: GununKelimesi.ipa
+          if-no-files-found: error
+
+      - name: .ipa dosyasını dala ekle (ipa/GununKelimesi.ipa)
+        run: |
+          mkdir -p ipa
+          cp GununKelimesi.ipa ipa/GununKelimesi.ipa
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f ipa/GununKelimesi.ipa
+          git commit -m "Derlenmiş .ipa [skip ci]"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
