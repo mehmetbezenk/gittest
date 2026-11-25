@@ -2,7 +2,7 @@ import AVFoundation
 import Combine
 
 /// İngilizce sesli okuma (telefon sessizdeyken de çalar).
-final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
+final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate, @unchecked Sendable {
     private let synthesizer = AVSpeechSynthesizer()
 
     override init() {
